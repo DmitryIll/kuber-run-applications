@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multitool-tmp
+spec:
+  containers:
+  - name: multitool-tmp
+    image: wbitt/network-multitool
+    env:
+    - name: HTTP_PORT
+      value: "1180"
+    - name: HTTPS_PORT
+      value: "11443"
+    ports:
+    - containerPort: 1180
+      name: http-port
+    - containerPort: 11443
+      name: https-port
