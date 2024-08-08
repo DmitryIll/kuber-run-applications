@@ -79,26 +79,176 @@ kubectl delete -f mydeployment.yaml
 
 ![alt text](image-4.png)
 
-Теперь создаю второй контейнер (но пока без первого nginx):
+Теперь создаю второй контейнер (в дополнение к первому):
 
 
 ```
-
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+  labels:
+    app: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+      - name: multitool
+        image: wbitt/network-multitool
+        env:
+        - name: HTTP_PORT
+          value: "1180"
+        - name: HTTPS_PORT
+          value: "11443"
+        ports:
+        - containerPort: 1180
+          name: http-port
+        - containerPort: 11443
+          name: https-port
 ```
+Запустил:
+
+![alt text](image-5.png)
+
+![alt text](image-6.png)
 
 2. После запуска увеличить количество реплик работающего приложения до 2.
+
+Увеличил и применил:
+
+![alt text](image-7.png)
+
 3. Продемонстрировать количество подов до и после масштабирования.
+- продемонстрировал выше.
+
 4. Создать Service, который обеспечит доступ до реплик приложений из п.1.
+
+Создал сервис:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysvc2
+spec:
+  selector:
+    app: nginx
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+      port: 1180
+      targetPort: 1180
+      port: 11443
+      targetPort: 11443
+```
+
+![alt text](image-8.png)
+
 5. Создать отдельный Pod с приложением multitool и убедиться с помощью `curl`, что из пода есть доступ до приложений из п.1.
 
-#### Вопросы
-
-что означает:
+Создал отдеьлный под:
 
 ```
-root@work:~/kuber-run-applications# kubectl apply -f mydeployment.yaml
-error: error validating "mydeployment.yaml": error validating data: failed to download openapi: Get "http://localhost:8080/openapi/v2?timeout=32s": dial tcp [::1]:8080: connect: connection refused; if you choose to ignore these errors, turn validation off with --validate=false
+apiVersion: v1
+kind: Pod
+metadata:
+  name: multitool-tmp
+spec:
+  containers:
+  - name: multitool-tmp
+    image: wbitt/network-multitool
+    env:
+    - name: HTTP_PORT
+      value: "1180"
+    - name: HTTPS_PORT
+      value: "11443"
+    ports:
+    - containerPort: 1180
+      name: http-port
+    - containerPort: 11443
+      name: https-port
 ```
+
+![alt text](image-9.png)
+
+Но, почему-то не получается подключиться внутрь пода:
+
+![alt text](image-10.png)
+
+Почему?
+
+Тогда пробую проброс портов пока сделать для проверки доступа к мультитулу по https:
+
+```
+kubectl port-forward service/mysvc2 10443:11443 --address='0.0.0.0'
+Forwarding from 0.0.0.0:10443 -> 11443
+```
+Проверил:
+![alt text](image-11.png)
+
+Теперь к nginx проверю:
+
+```
+kubectl port-forward service/mysvc2 12080:80 --address='0.0.0.0'
+```
+
+Но, почему то не заработало:
+
+![alt text](image-12.png)
+
+при этом:
+
+![alt text](image-13.png)
+
+Т.е. почему то не применились другие порты.
+
+Пробую переделать сервис:
+
+![alt text](image-14.png)
+
+Теперь порты появились.
+
+
+Опять пробую проброс портов на 80 на nginx.
+
+![alt text](image-15.png)
+
+Но, не работает:
+
+![alt text](image-16.png)
+
+
+Еще попробовал:
+
+```
+ kubectl port-forward service/mysvc2 12080:1180 --address='0.0.0.0'
+Forwarding from 0.0.0.0:12080 -> 1180
+```
+Тоже не работает.
+
+Пробую опять https
+
+```
+kubectl port-forward service/mysvc2 10443:11443 --address='0.0.0.0'
+Forwarding from 0.0.0.0:10443 -> 11443
+```
+Но, то же не работает.
+
+Видимо что-то не так в сервисе.
+?
 
 ------
 
