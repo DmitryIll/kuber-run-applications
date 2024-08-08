@@ -10,7 +10,9 @@ spec:
       protocol: TCP
       port: 80
       targetPort: 80
+    - name: http2
       port: 1180
       targetPort: 1180
+    - name: https      
       port: 11443
       targetPort: 11443
