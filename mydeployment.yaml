@@ -23,11 +23,11 @@ spec:
         image: wbitt/network-multitool
         env:
         - name: HTTP_PORT
-          value: "11080"
+          value: "1180"
         - name: HTTPS_PORT
           value: "11443"
         ports:
-        - containerPort: 11080
+        - containerPort: 1180
           name: http-port
         - containerPort: 11443
           name: https-port
