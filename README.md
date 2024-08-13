@@ -281,7 +281,63 @@ nslookup myservice.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace
 
 Создаю деплоймент для Nginx с init контейнером:
 
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-init
+  labels:
+    app: nginx-init
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-init
+  template:
+    metadata:
+      labels:
+        app: nginx-init
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:1.14.2
+        ports:
+        - containerPort: 80
+      initContainers:
+      - name: init-nginx-svc
+        image: busybox:1.28
+        command: ['sh', '-c', "until nslookup nginx-svc.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for myservice; sleep 2; done"]
+```
 
+Применяю:
+
+```
+kubectl apply -f dep-nginx-init.yaml
+```
+
+![alt text](image-23.png)
+
+![alt text](image-24.png)
+![alt text](image-25.png)
+
+- ок, пока нет сервиса NGINX не запускается.
+
+Создаю сервис:
+
+```
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-svc
+spec:
+  selector:
+    app: nginx-init
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+```
 
 
 
