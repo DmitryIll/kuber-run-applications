@@ -184,71 +184,63 @@ spec:
 
 ![alt text](image-9.png)
 
-Но, почему-то не получается подключиться внутрь пода:
+Пока (сначала) пробую проброс портов:
 
-![alt text](image-10.png)
 
-Почему?
-
-Тогда пробую проброс портов пока сделать для проверки доступа к мультитулу по https:
-
-```
-kubectl port-forward service/mysvc2 10443:11443 --address='0.0.0.0'
-Forwarding from 0.0.0.0:10443 -> 11443
-```
-Проверил:
-![alt text](image-11.png)
-
-Теперь к nginx проверю:
+Проверка работы с NGINX по 80:
 
 ```
 kubectl port-forward service/mysvc2 12080:80 --address='0.0.0.0'
 ```
 
-Но, почему то не заработало:
+![alt text](image-17.png)
 
-![alt text](image-12.png)
+- работает.
 
-при этом:
-
-![alt text](image-13.png)
-
-Т.е. почему то не применились другие порты.
-
-Пробую переделать сервис:
-
-![alt text](image-14.png)
-
-Теперь порты появились.
-
-
-Опять пробую проброс портов на 80 на nginx.
-
-![alt text](image-15.png)
-
-Но, не работает:
-
-![alt text](image-16.png)
-
-
-Еще попробовал:
+Проверка работы по 1180:
 
 ```
- kubectl port-forward service/mysvc2 12080:1180 --address='0.0.0.0'
-Forwarding from 0.0.0.0:12080 -> 1180
+kubectl port-forward service/mysvc2 11080:1180 --address='0.0.0.0'
 ```
-Тоже не работает.
 
-Пробую опять https
+![alt text](image-18.png)
+
+- работает.
+
+Проверка работы по 11443:
 
 ```
-kubectl port-forward service/mysvc2 10443:11443 --address='0.0.0.0'
-Forwarding from 0.0.0.0:10443 -> 11443
+kubectl port-forward service/mysvc2 11443:11443 --address='0.0.0.0'
 ```
-Но, то же не работает.
 
-Видимо что-то не так в сервисе.
-?
+![alt text](image-19.png)
+
+Работает.
+
+Теперь пробую подключиться ко временному поду:
+
+```
+kubectl exec multitool-tmp -it bash
+```
+
+далии из пода:
+
+```
+curl mysvc2
+```
+
+![alt text](image-20.png)
+
+Так же можно подключиться по именам:
+
+```
+curl mysvc2
+curl mysvc2.default
+curl mysvc2.default.svc
+curl mysvc2.default.svc.cluster.local
+```
+
+Итого - сервис работает внутри кластера.
 
 ------
 
@@ -258,6 +250,40 @@ Forwarding from 0.0.0.0:10443 -> 11443
 2. Убедиться, что nginx не стартует. В качестве Init-контейнера взять busybox.
 3. Создать и запустить Service. Убедиться, что Init запустился.
 4. Продемонстрировать состояние пода до и после запуска сервиса.
+
+#### Решение задания 2
+
+проверил что в файле (запускал во временном поде) есть название ннеймспейса текущего:
+
+```
+cat /var/run/secrets/kubernetes.io/serviceaccount/namespace
+default
+```
+Далее проверил:
+
+```
+nslookup mysvc2.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local
+```
+
+![alt text](image-21.png)
+
+т.е. если сервис есть то такой ответ.
+
+А если сервиса нет:
+
+```
+nslookup myservice.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local
+```
+
+То ответ:
+
+![alt text](image-22.png)
+
+Создаю деплоймент для Nginx с init контейнером:
+
+
+
+
 
 ------
 
