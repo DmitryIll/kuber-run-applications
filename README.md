@@ -339,6 +339,20 @@ spec:
       targetPort: 80
 ```
 
+```
+kubectl apply -f nginx-svc.yaml
+```
+
+![alt text](image-26.png)
+
+
+После чего под запустился:
+
+![alt text](image-27.png)
+
+Еще попробовал посмотреть логи:
+
+![alt text](image-28.png)
 
 
 ------
